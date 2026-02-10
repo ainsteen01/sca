@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
                   ]
                 ),
                 child: TextField(
-        maxLength: 10,
+                  maxLength: 10,
                   keyboardType: TextInputType.phone,
                   controller: numberController,
                   decoration: InputDecoration(
