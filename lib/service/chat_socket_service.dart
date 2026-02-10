@@ -35,23 +35,26 @@ class ChatSocketService {
         'wss://simple-chat-server-9vzn.onrender.com/ws/$mobile',
       ),
     );
-   // print('wss://simple-chat-server-9vzn.onrender.com/ws/${mobile} blal');
+    // print('wss://simple-chat-server-9vzn.onrender.com/ws/${mobile} blal');
 
     channel.stream.listen(
       _handleData,
       onDone: _handleDisconnect,
       onError: (_) => _handleDisconnect(),
     );
-
   }
 
   void _handleData(dynamic data) {
     final json = jsonDecode(data);
 
+    // 🔥 Detect first successful connect OR reconnect
     if (!_isConnected) {
       _isConnected = true;
       _isConnecting = false;
       _startPing();
+
+      // ✅ REQUEST ONLINE USERS ON CONNECT
+      requestOnlineUsers();
     }
 
     if (json["type"] == "online_users") {
@@ -61,8 +64,6 @@ class ChatSocketService {
     }
 
     if (json["type"] == "message") {
-      // print(json["from"],);
-      // print( json["text"]);
       _controller.add(
         ChatEvent.message(json["from"], json["text"]),
       );
@@ -101,6 +102,21 @@ class ChatSocketService {
     _pingTimer = null;
   }
 
+  // Add this method to request online users
+  void requestOnlineUsers() {
+    if (!_isConnected) {
+      print("Cannot request online users: not connected");
+      return;
+    }
+
+    try {
+      channel.sink.add(jsonEncode({"type": "get_online_users"}));
+      print("Requested online users from server");
+    } catch (e) {
+      print("Error requesting online users: $e");
+    }
+  }
+
   void sendMessage(String to, String text) {
     if (!_isConnected) return;
 
@@ -117,6 +133,5 @@ class ChatSocketService {
     _isConnected = false;
     _isConnecting = false;
     channel.sink.close();
-    //_controller.close();
   }
 }

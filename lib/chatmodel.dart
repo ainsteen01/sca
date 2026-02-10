@@ -1,15 +1,25 @@
+// In your chatmodel.dart file
 class ChatEvent {
-  final String type; // online_users | message
+  final String type;
+  final List<String>? users;
   final String? from;
   final String? text;
-  final List<String>? users;
+  final String? userId;
 
-  const ChatEvent.onlineUsers(this.users)
-      : type = "online_users",
-        from = null,
-        text = null;
+  ChatEvent({
+    required this.type,
+    this.users,
+    this.from,
+    this.text,
+    this.userId,
+  });
 
-  const ChatEvent.message(this.from, this.text)
-      : type = "message",
-        users = null;
+  // Factory constructors for different event types
+  factory ChatEvent.onlineUsers(List<String> users) {
+    return ChatEvent(type: "online_users", users: users);
+  }
+
+  factory ChatEvent.message(String from, String text) {
+    return ChatEvent(type: "message", from: from, text: text);
+  }
 }
