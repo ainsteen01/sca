@@ -1,170 +1,273 @@
-# SCA — Simple - Chat - App 
+# 💬 SCA — Simple Chat App
 
-An opensource project for simple chatting
+**An open-source project for simple, private chatting.**
+*Data lives on your device. The server is just a real-time switchboard.*
 
-## Introduction
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Flutter](https://img.shields.io/badge/Flutter-3.0+-blue?logo=flutter)](https://flutter.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.95+-green?logo=fastapi)](https://fastapi.tiangolo.com)
 
-This project is a real-time chat application designed with simplicity, accessibility, and privacy in mind, making it especially suitable for beginner-level users. The app allows users to log in using their mobile numbers and view a list of currently available users. When two users are online simultaneously, they can communicate instantly through text messages. To maintain privacy and reduce server dependency, all chat data is stored locally on the users’ devices rather than on a central server.
-The application is built using Flutter for the frontend, providing a responsive and cross-platform user interface, while Hive is used as the local storage solution for efficiently managing chat data on the device. The backend is developed with Python using FastAPI, which handles user connectivity and real-time communication logic.
-For deployment and online accessibility, the backend is hosted on the free hosting tier of Render.com. This setup enables the system to run without infrastructure costs during development while still supporting live user interaction.
-Overall, the project demonstrates how a lightweight, privacy-focused chat system can be built using modern development tools, combining real-time communication with local data storage and minimal server reliance.
+---
+
+## 📋 Introduction
+
+SCA is a real-time chat application built with simplicity, accessibility, and privacy in mind. It's particularly suitable for beginners or anyone who wants a lightweight messaging system without centralized data collection.
+
+### How it works
+
+* Log in using your mobile number
+* See who's currently online
+* Send instant text messages to online users
+* All chat history is stored **only on your device** (no server-side logs)
+
+The project demonstrates how to build a privacy-focused communication tool using modern frameworks: **Flutter** for the frontend, **Hive** for local storage, and **FastAPI WebSockets** for real-time backend communication.
+
+---
 
 ## 🧩 Tech Stack
-Frontend
 
-* Flutter (cross-platform mobile UI framework)
+| Area         | Technology         | Purpose                                  |
+| ------------ | ------------------ | ---------------------------------------- |
+| **Frontend** | Flutter            | Cross-platform mobile UI (iOS/Android)   |
+| **Local DB** | Hive               | Lightweight NoSQL storage for messages   |
+| **Backend**  | Python + FastAPI   | WebSocket server & connection management |
+| **Hosting**  | Render (Free Tier) | Cloud deployment                         |
 
-* Hive (local database for chat storage)
-
-## Backend
-
-* Python WebSocket server built with FastAPI
-
-* Real-time connection and presence tracking
-
-* Hosted on free tier of Render.com
+---
 
 ## ✨ Features
 
-* 📲 Login using mobile number
+* **📲 Mobile Login** – Simple authentication using 10+ digit mobile numbers
+* **🟢 Live Presence** – See which users are online in real time
+* **💬 Instant Messaging** – Send/receive text messages instantly (online users only)
+* **🔒 Privacy First** – Messages stored **only on your device** using Hive
+* **💓 Heartbeat System** – Keeps connections alive and detects inactive users
+* **🧹 Auto Cleanup** – Stale connections removed automatically
+* **📡 Presence Broadcasts** – Online list updates automatically when users join/leave
+* **🩺 Health Check** – Monitoring endpoint for deployment
 
-* 🟢 Real-time online user presence
-
-* 💬 Instant text messaging (online users only)
-
-* 🔒 Messages stored only on user devices
-
-* 💓 Heartbeat system to detect inactive users
-
-* 🧹 Automatic cleanup of disconnected users
-
-* 📡 Manual and automatic online user updates
-
-* 🩺 Health check endpoint for deployment monitoring
+---
 
 ## 🧠 System Architecture
 
-The application follows a minimal server dependency model:
+The application follows a **minimal server dependency model**.
 
-* 1. The mobile app connects to the backend using WebSockets.
+```
+Mobile App  ←→  WebSocket Server  ←→  Mobile App
+     |                                   |
+     └──────── Local Chat Storage ───────┘
+```
 
-* 2. The server maintains active connections in memory.
+### 🔄 Communication Flow
 
-* 3. Users can see who is currently online.
+1. Mobile app connects to the backend via WebSockets
+2. Server stores active user connections in memory
+3. Users can view who is currently online
+4. Messages are delivered instantly if recipient is connected
+5. Messages are saved locally using Hive
+6. Inactive users are automatically removed
 
-* 4. Messages are delivered directly if the recipient is connected.
+---
 
-* 5. Messages are stored locally using Hive.
-
-* 6. If a user disconnects or stops sending heartbeats, they are removed automatically.
-
-The server does NOT store:
+### 🚫 What the Server Does NOT Store
 
 * Chat history
-
 * User profiles
-
 * Message logs
+* Databases
+
+The server acts only as a **live message router**.
+
+---
 
 ## 🔌 WebSocket Endpoint
-> /ws/{mobile}
+
+```
+/ws/{mobile}
+```
+
 Each user connects using their mobile number.
 
-# Mobile Validation
+---
 
-* Must contain only digits
+### 📱 Mobile Validation Rules
 
-* Minimum length: 10
+| Rule           | Requirement         |
+| -------------- | ------------------- |
+| Format         | Digits only         |
+| Minimum length | 10                  |
+| Invalid input  | Connection rejected |
 
-Invalid numbers are rejected.
+---
 
 ## 📡 WebSocket Message Types
-# 1️⃣ Heartbeat
-Keeps the connection alive.
-# Client → Server
-> { "type": "ping" }
-# Server → Client
-> { "type": "pong" }
 
-# 2️⃣ Request Online Users
-Client can request the current online list.
-# Client → Server
-> { "type": "get_online_users" }
-# Server → Client
-> {
+### 💓 Heartbeat (Keep Connection Alive)
+
+**Client → Server**
+
+```json
+{ "type": "ping" }
+```
+
+**Server → Client**
+
+```json
+{ "type": "pong" }
+```
+
+---
+
+### 🟢 Request Online Users
+
+**Client → Server**
+
+```json
+{ "type": "get_online_users" }
+```
+
+**Server → Client**
+
+```json
+{
   "type": "online_users",
   "users": ["mobile1", "mobile2"]
 }
+```
 
-# 3️⃣ Send Message
-Send a text message to another online user.
-# Client → Server
-> { "type": "message","to": "recipient_mobile","text": "Hello!"}
-# Server → Recipient
-> {"type": "message","from": "sender_mobile","text": "Hello!"}
+---
 
-# 4️⃣ Automatic Presence Broadcast
-Whenever a user connects or disconnects, all users receive:
-> {
- "type": "online_users",
+### 💬 Send Message
+
+**Client → Server**
+
+```json
+{
+  "type": "message",
+  "to": "recipient_mobile",
+  "text": "Hello!"
+}
+```
+
+**Server → Recipient**
+
+```json
+{
+  "type": "message",
+  "from": "sender_mobile",
+  "text": "Hello!"
+}
+```
+
+---
+
+### 🔄 Automatic Presence Broadcast
+
+Sent to all users whenever someone connects or disconnects.
+
+```json
+{
+  "type": "online_users",
   "users": [...]
 }
+```
 
-# ⏱ Connection Management
-The server tracks activity timestamps for each connection.
+---
+
+## ⏱ Connection Management
+
+The server monitors user activity using timestamps.
+
 | Parameter        | Value      | Purpose                   |
 | ---------------- | ---------- | ------------------------- |
 | Ping Timeout     | 60 seconds | Disconnect inactive users |
-| Cleanup Interval | 30 seconds | Background cleanup check  |
-Inactive users are automatically removed and presence is updated.
+| Cleanup Interval | 30 seconds | Background cleanup cycle  |
 
-# 🧹 Background Cleanup Task
+Inactive users are removed automatically and presence is updated.
+
+---
+
+## 🧹 Background Cleanup Task
+
 Runs continuously to:
+
 * Detect users who stopped sending heartbeats
-
 * Remove stale connections
+* Broadcast updated online users
 
-* Broadcast updated online list
-Designed to work safely on cloud hosting environments.
+Designed for safe operation in cloud hosting environments.
 
-# 🩺 Health Check Endpoint
-> GET /health
-# Response
-> {
+---
+
+## 🩺 Health Check Endpoint
+
+```
+GET /health
+```
+
+### Example Response
+
+```json
+{
   "status": "ok",
   "connections": 3
 }
+```
 
-Useful for:
+### Useful For
 
 * Deployment monitoring
-
 * Uptime checks
+* Debugging active connections
 
-* Debugging connection count
+---
 
-# 🚀 Deployment
-The backend is deployed using a cloud hosting platform free tier.
-Typical deployment steps:
-* Create web service
-* Install dependencies
-* Run FastAPI server
-* Expose WebSocket endpoint
-* Monitor health endpoint
+## 🚀 Deployment
 
-# 🔐 Privacy Model
-This project is designed with privacy-first principles:
+Typical deployment flow:
+
+1. Create cloud web service
+2. Install dependencies
+3. Start FastAPI server
+4. Expose WebSocket endpoint
+5. Monitor health endpoint
+
+---
+
+## 🔐 Privacy Model
+
+> 🛡 Built with privacy by design
+
 ✔ No server-side message storage
 ✔ No database required
-✔ No chat history retention
-✔ Device-only storage
-✔ Minimal metadata handling
+✔ No message retention
+✔ Device-only chat storage
+✔ Minimal metadata usage
 
-# 📈 Limitations
+---
+
+## 📈 Limitations
+
 * Messages delivered only when both users are online
 * No offline message queue
-* In-memory connection storage (not persistent across restarts)
-* Single server instance recommended for current design
+* In-memory connections reset on server restart
+* Single server instance recommended
 
-# 📜 License
-Open for learning and educational use.
+---
+
+## 🎯 Learning Value
+
+This project demonstrates:
+
+* WebSocket real-time communication
+* Presence tracking systems
+* Local storage architecture
+* Stateless backend design
+* Connection lifecycle management
+* Cloud deployment fundamentals
+
+---
+
+## 📜 License
+
+MIT License — open for learning, experimentation, and educational use.
